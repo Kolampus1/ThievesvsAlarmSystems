@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class AlarmLight : MonoBehaviour
@@ -6,7 +7,6 @@ public class AlarmLight : MonoBehaviour
     [SerializeField] private float _blinkInterval;
 
     private bool _isAlarmActive;
-    private float _blinkTimer;
 
     private void Awake()
     {
@@ -14,33 +14,45 @@ public class AlarmLight : MonoBehaviour
             _light.enabled = false;
     }
 
-    private void Update()
-    {
-        if (_isAlarmActive == false || _light == null)
-            return;
-
-        _blinkTimer += Time.deltaTime;
-
-        if (_blinkTimer < _blinkInterval)
-            return;
-
-        _blinkTimer = 0f;
-        _light.enabled = !_light.enabled;
-    }
-
     public void SetAlarmActive(bool isActive)
     {
-        _isAlarmActive = isActive;
-        _blinkTimer = 0f;
+        if (_isAlarmActive == isActive)
+            return;
 
-        if (_light != null)
-            _light.enabled = isActive;
+        _isAlarmActive = isActive;
+        StopAllCoroutines();
+
+        if (_light == null)
+            return;
+
+        if (isActive)
+        {
+            _light.enabled = true;
+            StartCoroutine(Blink());
+        }
+        else
+        {
+            _light.enabled = false;
+        }
+    }
+
+    private IEnumerator Blink()
+    {
+        var wait = new WaitForSeconds(_blinkInterval);
+
+        while (_isAlarmActive && isActiveAndEnabled)
+        {
+            yield return wait;
+
+            if (_isAlarmActive)
+                _light.enabled = !_light.enabled;
+        }
     }
 
     private void OnDisable()
     {
+        StopAllCoroutines();
         _isAlarmActive = false;
-        _blinkTimer = 0f;
 
         if (_light != null)
             _light.enabled = false;
