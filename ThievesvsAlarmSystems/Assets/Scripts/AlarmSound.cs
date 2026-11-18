@@ -7,6 +7,7 @@ public class AlarmSound : MonoBehaviour
     [SerializeField] private float _fadeSpeed;
 
     private AudioSource _audioSource;
+    private Coroutine _fadeCoroutine;
     private bool _isAlarmActive;
 
     private void Awake()
@@ -20,57 +21,29 @@ public class AlarmSound : MonoBehaviour
             return;
 
         _isAlarmActive = isActive;
-        StopAllCoroutines();
 
-        if (isActive)
-        {
-            if (_audioSource.clip == null)
-                return;
+        if (_isAlarmActive && _audioSource.clip != null && _audioSource.isPlaying == false)
+            _audioSource.Play();
 
-            if (_audioSource.isPlaying == false)
-                _audioSource.Play();
-
-            StartCoroutine(FadeVolume(_maxVolume, false));
-        }
-        else if (_audioSource.isPlaying)
-        {
-            StartCoroutine(FadeVolume(0f, true));
-        }
-        else
-        {
-            _audioSource.volume = 0f;
-        }
+        if (_fadeCoroutine == null)
+            _fadeCoroutine = StartCoroutine(FadeVolume());
     }
 
-    private IEnumerator FadeVolume(float targetVolume, bool stopAfterFade)
+    private IEnumerator FadeVolume()
     {
-        while (_audioSource.volume < targetVolume)
+        float targetVolume = _isAlarmActive ? _maxVolume : 0f;
+
+        while (_audioSource.volume != targetVolume)
         {
+            targetVolume = _isAlarmActive ? _maxVolume : 0f;
+
             _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolume, _fadeSpeed * Time.deltaTime);
             yield return null;
         }
 
-        while (_audioSource.volume > targetVolume)
-        {
-            _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolume, _fadeSpeed * Time.deltaTime);
-            yield return null;
-        }
-
-        _audioSource.volume = targetVolume;
-
-        if (stopAfterFade)
+        if (_isAlarmActive == false)
             _audioSource.Stop();
-    }
 
-    private void OnDisable()
-    {
-        StopAllCoroutines();
-        _isAlarmActive = false;
-
-        if (_audioSource != null)
-        {
-            _audioSource.Stop();
-            _audioSource.volume = 0f;
-        }
+        _fadeCoroutine = null;
     }
 }
